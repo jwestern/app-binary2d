@@ -495,7 +495,7 @@ impl Hydrodynamics for Euler
         let heating   = if uthermal < utarget {  utarget  * beta * omega } else { 0.0 };
         let cooling   = if uthermal > utarget { -uthermal * beta * omega } else { 0.0 };
 
-        let drive_toward_background_state = false;
+        let drive_toward_background_state = true;
 
         let buffer_conserved = if drive_toward_background_state {
             background_conserved
@@ -636,7 +636,13 @@ impl Primitive for hydro_euler::euler_2d::Primitive
     fn gas_pressure(self) -> f64 { self.gas_pressure() }
     fn validate(self) -> Self {
         if !{self.gas_pressure() > 0.0} {
-            panic!("non-positive pressure: p = {}", self.gas_pressure())
+            println!("non-positive pressure: p = {}", self.gas_pressure());
+            Self(self.mass_density(),
+                 self.velocity_x(),
+                 self.velocity_y(),
+                 self.mass_density() * 0.00001 * (5.0 / 3.0 - 1.0)
+                )
+            //panic!("non-positive pressure: p = {}", self.gas_pressure())
         } else {
             self
         }
