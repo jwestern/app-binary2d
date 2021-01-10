@@ -43,7 +43,7 @@ impl nicer_hdf5::H5Write for Tasks
 
 
 // ============================================================================
-fn write_state<C: Conserved>(group: &Group, state: &State<C>, block_data: &Vec<BlockData<C>>) -> hdf5::Result<()>
+fn write_state<C: Conserved>(group: &Group, state: &State<C>, block_data: &Vec<BlockData<C>>, orbital_state: kepler_two_body::OrbitalState) -> hdf5::Result<()>
 {
     type E = kepler_two_body::OrbitalElements;
 
@@ -57,6 +57,7 @@ fn write_state<C: Conserved>(group: &Group, state: &State<C>, block_data: &Vec<B
         block_group.new_dataset::<ItemizedChange<C>>().create("integrated_source_terms", ())?.write_scalar(&s.integrated_source_terms)?;
         block_group.new_dataset::<ItemizedChange<E>>().create("orbital_elements_change", ())?.write_scalar(&s.orbital_elements_change)?;
     }
+    state_group.new_dataset::<kepler_two_body::OrbitalState>().create("orbital_state", ())?.write_scalar(&orbital_state)?;
     state.time.write(&state_group, "time")?;
     state.iteration.write(&state_group, "iteration")?;
     Ok(())
@@ -143,14 +144,15 @@ pub fn write_checkpoint<C: Conserved>(
     filename: &str,
     state: &State<C>,
     block_data: &Vec<BlockData<C>>,
-    model: &HashMap::<String, kind_config::Value>,
+    model_value_map: &HashMap::<String, kind_config::Value>,
+    orbital_state: kepler_two_body::OrbitalState,
     tasks: &Tasks) -> hdf5::Result<()>
 {
     let file = File::create(filename)?;
 
-    write_state(&file, &state, block_data)?;
+    write_state(&file, &state, block_data, orbital_state)?;
     write_tasks(&file, &tasks)?;
-    write_model(&file, &model)?;
+    write_model(&file, &model_value_map)?;
     write_build(&file)?;
 
     Ok(())

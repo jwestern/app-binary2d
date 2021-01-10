@@ -343,7 +343,6 @@ impl Tasks
             integrated_source_terms: totals.0,
             orbital_elements_change: totals.1,
             orbital_state: Solver::new(model,app).orbital_elements.orbital_state_from_time(state.time),
-            //kepler_two_body::OrbitalElements::orbital_state_from_time(state.time),
         };
         time_series.push(sample);
     }
@@ -358,11 +357,12 @@ impl Tasks
         let outdir = app.output_directory()?;
         let fname_chkpt       = outdir.child(&format!("chkpt.{:04}.h5", self.write_checkpoint.count));
         let fname_time_series = outdir.child("time_series.h5");
+        let orbital_state = Solver::new(model, app).orbital_elements.orbital_state_from_time(state.time);
 
         self.write_checkpoint.advance(ORBITAL_PERIOD * f64::from(model.get("cpi")));
 
         println!("write checkpoint {}", fname_chkpt);
-        io::write_checkpoint(&fname_chkpt, &state, &block_data, &model.value_map(), &self)?;
+        io::write_checkpoint(&fname_chkpt, &state, &block_data, &model.value_map(), orbital_state, &self)?;
         io::write_time_series(&fname_time_series, time_series, &model.value_map())?;
 
         Ok(())
