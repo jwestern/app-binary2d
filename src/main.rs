@@ -213,6 +213,7 @@ pub struct TimeSeriesSample<C: Conserved>
     pub time: f64,
     pub integrated_source_terms: ItemizedChange<C>,
     pub orbital_elements_change: ItemizedChange<kepler_two_body::OrbitalElements>,
+    pub orbital_state: kepler_two_body::OrbitalState,
 }
 
 
@@ -327,7 +328,8 @@ impl Tasks
     fn record_time_sample<C: Conserved>(&mut self,
         state: &State<C>,
         time_series: &mut Vec<TimeSeriesSample<C>>,
-        model: &Form)
+        model: &Form,
+        app: &App)
     {
         self.record_time_sample.advance(ORBITAL_PERIOD * f64::from(model.get("tsi")));
 
@@ -340,6 +342,8 @@ impl Tasks
             time: state.time,
             integrated_source_terms: totals.0,
             orbital_elements_change: totals.1,
+            orbital_state: Solver::new(model,app).orbital_elements.orbital_state_from_time(state.time),
+            //kepler_two_body::OrbitalElements::orbital_state_from_time(state.time),
         };
         time_series.push(sample);
     }
@@ -384,7 +388,7 @@ impl Tasks
             self.report_progress(state.time, model.get("tfinal").into());
         }
         if state.time >= self.record_time_sample.next_time {
-            self.record_time_sample(state, time_series, model);
+            self.record_time_sample(state, time_series, model, app);
         }
         if state.time >= self.write_checkpoint.next_time {
             self.write_checkpoint(state, time_series, block_data, model, app)?;
