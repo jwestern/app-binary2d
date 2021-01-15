@@ -53,7 +53,6 @@ pub struct ItemizedChange<C: ItemizeData>
     pub grav1:   C,
     pub grav2:   C,
     pub buffer:  C,
-    pub heating: C,
     pub cooling: C,
 }
 
@@ -177,14 +176,13 @@ impl<C: ItemizeData> ItemizedChange<C>
             grav1:   C::zeros(),
             grav2:   C::zeros(),
             buffer:  C::zeros(),
-            heating: C::zeros(),
             cooling: C::zeros(),
         }
     }
 
     pub fn total(&self) -> C
     {
-        self.sink1 + self.sink2 + self.grav1 + self.grav2 + self.buffer + self.cooling + self.heating
+        self.sink1 + self.sink2 + self.grav1 + self.grav2 + self.buffer + self.cooling
     }
 
     pub fn add_mut(&mut self, s0: &Self)
@@ -194,7 +192,6 @@ impl<C: ItemizeData> ItemizedChange<C>
         self.grav1   =  self.grav1   + s0.grav1;
         self.grav2   =  self.grav2   + s0.grav2;
         self.buffer  =  self.buffer  + s0.buffer;
-        self.heating =  self.heating + s0.heating;
         self.cooling =  self.cooling + s0.cooling;
     }
 
@@ -205,7 +202,6 @@ impl<C: ItemizeData> ItemizedChange<C>
         self.grav1   =  self.grav1   * s;
         self.grav2   =  self.grav2   * s;
         self.buffer  =  self.buffer  * s;
-        self.heating =  self.heating * s;
         self.cooling =  self.cooling * s;
     }
 
@@ -248,7 +244,6 @@ impl<C: ItemizeData> ItemizedChange<C> where C: Conserved
             grav1:    Self::pert1(time, self.grav1.mass_and_momentum(), elements),
             grav2:    Self::pert2(time, self.grav2.mass_and_momentum(), elements),
             buffer:   OrbitalElements::zeros(),
-            heating:  OrbitalElements::zeros(),
             cooling:  OrbitalElements::zeros(),
         }
     }
@@ -400,7 +395,6 @@ impl Hydrodynamics for Isothermal
             sink1:   conserved * (-st.sink_rate1 * dt),
             sink2:   conserved * (-st.sink_rate2 * dt),
             buffer: (conserved - background_conserved) * (-dt * st.buffer_rate),
-            heating: Self::Conserved::zeros(),
             cooling: Self::Conserved::zeros(),
         }
     }
@@ -489,32 +483,15 @@ impl Hydrodynamics for Euler
         let rs        = solver.softening_length;
         let omega     = 1.0 / (rsq + rs * rs).powf(3.0 / 4.0);
         let beta      = solver.beta;
-        let thresh_e  = solver.fake_heat_thresh;
         let uthermal  = primitive.gas_pressure() / (self.gamma_law_index - 1.0);
-        let utarget   = thresh_e * primitive.mass_density(); // Add a model parameter target_temp
-        let heating   = if uthermal < utarget {  utarget  * beta * omega } else { 0.0 };
-        let cooling   = if uthermal > utarget { -uthermal * beta * omega } else { 0.0 };
-
-        let drive_toward_background_state = true;
-
-        let buffer_conserved = if drive_toward_background_state {
-            background_conserved
-        } else {
-            hydro_euler::euler_2d::Conserved(
-                conserved.0,
-                conserved.0 *  -y * omega,
-                conserved.0 *   x * omega,
-                conserved.0 * rsq * omega * omega * 0.5 + uthermal,
-            )
-        };
+        let cooling   = -uthermal * beta * omega;
 
         ItemizedChange{
             grav1:   hydro_euler::euler_2d::Conserved(0.0, st.fx1, st.fy1, st.fx1 * vx + st.fy1 * vy) * dt,
             grav2:   hydro_euler::euler_2d::Conserved(0.0, st.fx2, st.fy2, st.fx2 * vx + st.fy2 * vy) * dt,
             sink1:   conserved * (-st.sink_rate1 * dt),
             sink2:   conserved * (-st.sink_rate2 * dt),
-            buffer: (conserved - buffer_conserved) * (-dt * st.buffer_rate),
-            heating: hydro_euler::euler_2d::Conserved(0.0, 0.0, 0.0, heating) * dt,
+            buffer: (conserved - background_conserved) * (-dt * st.buffer_rate),
             cooling: hydro_euler::euler_2d::Conserved(0.0, 0.0, 0.0, cooling) * dt,
         }
     }
