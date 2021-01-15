@@ -569,7 +569,6 @@ impl Solver {
             sink_rate:        model.get("sink_rate").into(),
             softening_length: model.get("softening_length").into(),
             beta:             model.get("beta").into(),
-            fake_heat_thresh: model.get("fake_heat_thresh").into(),
             force_flux_comm:  app.flux_comm,
             orbital_elements: kepler_two_body::OrbitalElements(a, m, q, e),
         }

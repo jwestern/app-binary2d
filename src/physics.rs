@@ -71,7 +71,6 @@ pub struct Solver
     pub nu: f64,
     pub lambda: f64,
     pub beta: f64,
-    pub fake_heat_thresh: f64,
     pub plm: f64,
     pub rk_order: i64,
     pub sink_radius: f64,
