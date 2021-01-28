@@ -71,6 +71,7 @@ pub trait Hydrodynamics: Copy + Send
         x: f64,
         y: f64,
         dt: f64,
+        t: f64,
         two_body_state: &OrbitalState) -> ItemizedChange<Self::Conserved>;
 
     fn intercell_flux<'a>(

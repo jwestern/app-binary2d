@@ -1,4 +1,5 @@
 use godunov_core::runge_kutta;
+use libm::erf;
 
 use kepler_two_body::{
     OrbitalElements,
@@ -70,7 +71,12 @@ pub struct Solver
     pub mach_number: f64,
     pub nu: f64,
     pub lambda: f64,
+    pub disk_mass: f64,
+    pub cool_type: String,
     pub beta: f64,
+    pub cooling_rate: f64,
+    pub onset_duration: f64,
+    pub onset_shift: f64,
     pub plm: f64,
     pub rk_order: i64,
     pub sink_radius: f64,
@@ -384,6 +390,7 @@ impl Hydrodynamics for Isothermal
         x: f64,
         y: f64,
         dt: f64,
+        _: f64,
         two_body_state: &kepler_two_body::OrbitalState) -> ItemizedChange<Self::Conserved>
     {
         let st = solver.source_terms(two_body_state, x, y, conserved.density());
@@ -472,6 +479,7 @@ impl Hydrodynamics for Euler
         x: f64,
         y: f64,
         dt: f64,
+        t: f64,
         two_body_state: &kepler_two_body::OrbitalState) -> ItemizedChange<Self::Conserved>
     {
         let st        = solver.source_terms(two_body_state, x, y, conserved.mass_density());
@@ -482,8 +490,20 @@ impl Hydrodynamics for Euler
         let rs        = solver.softening_length;
         let omega     = 1.0 / (rsq + rs * rs).powf(3.0 / 4.0);
         let beta      = solver.beta;
-        let uthermal  = primitive.gas_pressure() / (self.gamma_law_index - 1.0);
-        let cooling   = -uthermal * beta * omega;
+        let onset_dur = solver.onset_duration;
+        let onset_shi = solver.onset_shift;
+        let cooling   = if solver.cool_type=="beta" {
+
+                let uthermal = primitive.gas_pressure() / (self.gamma_law_index - 1.0);
+                -uthermal * beta * omega * (erf( (t - onset_shi) / onset_dur ) + 1.0) * 0.5
+
+            } else if solver.cool_type=="T^4" {
+
+                let epsilon = primitive.gas_pressure() / primitive.mass_density() / (self.gamma_law_index - 1.0);
+                -solver.disk_mass * epsilon.powi(4) * solver.cooling_rate * (erf( (t - onset_shi) / onset_dur ) + 1.0) * 0.5
+            } else {
+                panic!("Parameter cool_type = {} not recognized.", solver.cool_type)
+            };
 
         ItemizedChange{
             grav1:   hydro_euler::euler_2d::Conserved(0.0, st.fx1, st.fy1, st.fx1 * vx + st.fy1 * vy) * dt,
