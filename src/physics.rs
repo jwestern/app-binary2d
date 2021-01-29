@@ -632,12 +632,16 @@ impl Primitive for hydro_euler::euler_2d::Primitive
     fn gas_pressure(self) -> f64 { self.gas_pressure() }
     fn validate(self) -> Self {
         if !{self.gas_pressure() > 0.0} {
-            println!("non-positive pressure: p = {}", self.gas_pressure());
-            Self(self.mass_density(),
-                 self.velocity_x(),
-                 self.velocity_y(),
-                 self.mass_density() * 0.00001 * (5.0 / 3.0 - 1.0)
-                )
+            if self.gas_pressure().is_nan() {
+                panic!("pressure is NaN! Aborting...")
+            } else {
+                println!("non-positive pressure: p = {}", self.gas_pressure());
+                Self(self.mass_density(),
+                     self.velocity_x(),
+                     self.velocity_y(),
+                     self.mass_density() * 0.00001 * (5.0 / 3.0 - 1.0)
+                    )
+            }
             //panic!("non-positive pressure: p = {}", self.gas_pressure())
         } else {
             self
