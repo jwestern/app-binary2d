@@ -1,6 +1,8 @@
 use godunov_core::runge_kutta;
 use libm::erf;
 
+use crate::ORBITAL_PERIOD;
+
 use kepler_two_body::{
     OrbitalElements,
     OrbitalState,
@@ -77,6 +79,7 @@ pub struct Solver
     pub cooling_rate: f64,
     pub onset_duration: f64,
     pub onset_shift: f64,
+    pub min_cooling_time: f64,
     pub plm: f64,
     pub rk_order: i64,
     pub sink_radius: f64,
@@ -492,15 +495,26 @@ impl Hydrodynamics for Euler
         let beta      = solver.beta;
         let onset_dur = solver.onset_duration;
         let onset_shi = solver.onset_shift;
-        let cooling   = if solver.cool_type=="beta" {
+        let min_cool  = solver.min_cooling_time * ORBITAL_PERIOD;
+        let t_orbits  = t / ORBITAL_PERIOD;
+        let slow_on   = (erf( (t_orbits - onset_shi) / onset_dur ) + 1.0) * 0.5;
+        let uthermal  = primitive.gas_pressure() / (self.gamma_law_index - 1.0);
+        let cooling   = 
+            if solver.cool_type=="beta" {
 
-                let uthermal = primitive.gas_pressure() / (self.gamma_law_index - 1.0);
-                -uthermal * beta * omega * (erf( (t - onset_shi) / onset_dur ) + 1.0) * 0.5
+                -uthermal * beta * omega * slow_on
 
             } else if solver.cool_type=="T^4" {
 
                 let epsilon = primitive.gas_pressure() / primitive.mass_density() / (self.gamma_law_index - 1.0);
-                -solver.disk_mass * epsilon.powi(4) * solver.cooling_rate * (erf( (t - onset_shi) / onset_dur ) + 1.0) * 0.5
+                let cooling_candidate = solver.disk_mass * epsilon.powi(4) * solver.cooling_rate / ORBITAL_PERIOD * slow_on;
+                if uthermal / cooling_candidate < min_cool {
+                    println!("Cooling capped at t={} x={} y={} r={}", t_orbits, x, y, rsq.sqrt());
+                    -uthermal/min_cool
+                } else {
+                    -cooling_candidate
+                }
+
             } else {
                 panic!("Parameter cool_type = {} not recognized.", solver.cool_type)
             };
@@ -635,7 +649,7 @@ impl Primitive for hydro_euler::euler_2d::Primitive
             if self.gas_pressure().is_nan() {
                 panic!("pressure is NaN! Aborting...")
             } else {
-                println!("non-positive pressure: p = {}", self.gas_pressure());
+                println!("non-positive pressure: p = {}, density is: Sigma = {}", self.gas_pressure(), self.mass_density());
                 Self(self.mass_density(),
                      self.velocity_x(),
                      self.velocity_y(),

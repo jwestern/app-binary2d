@@ -92,8 +92,9 @@ fn main() -> anyhow::Result<()>
         .item("cool_type"       , "T^4"  , "Type of cooling [beta|T^4]")
         .item("beta"            , 0.05   , "Beta cooling strength [dimensionless, ~0.05]")
         .item("cooling_rate"    , 0.001  , "T^4 cooling strength [1/orbits, ~0.001]")
-        .item("onset_shift"     , 50.0   , "Time at which cooling term reaches 50% strength")
-        .item("onset_duration"  , 10.0   , "Approximate time duration over which cooling term goes from 0%-100% strength")
+        .item("onset_shift"     , -500.0 , "Time at which cooling term reaches 50% strength [orbits]")
+        .item("onset_duration"  , 10.0   , "Approximate time duration over which cooling term goes from 0%-100% strength [orbits]")
+        .item("min_cooling_time", 0.005  , "Floor for the cooling time [orbits], applied when cool_type='T^4'")
         .item("mach_number"     , 10.0   , "Orbital Mach number of the disk")
         .item("mass_ratio"      , 1.0    , "Binary mass ratio (M2 / M1)")
         .item("nu"              , 0.001  , "Shear viscosity [Omega a^2]")
@@ -578,6 +579,7 @@ impl Solver {
             beta:             model.get("beta").into(),
             disk_mass:        model.get("disk_mass").into(),
             cooling_rate:     model.get("cooling_rate").into(),
+            min_cooling_time: model.get("min_cooling_time").into(),
             force_flux_comm:  app.flux_comm,
             orbital_elements: kepler_two_body::OrbitalElements(a, m, q, e),
         }
