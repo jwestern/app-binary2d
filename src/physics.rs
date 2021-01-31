@@ -507,7 +507,7 @@ impl Hydrodynamics for Euler
             } else if solver.cool_type=="T^4" {
 
                 let epsilon = primitive.gas_pressure() / primitive.mass_density() / (self.gamma_law_index - 1.0);
-                let cooling_candidate = solver.disk_mass * epsilon.powi(4) * solver.cooling_rate / ORBITAL_PERIOD * slow_on;
+                let cooling_candidate = solver.disk_mass * epsilon.powi(4) * (solver.cooling_rate / ORBITAL_PERIOD).powf(3.0) * slow_on;
                 if uthermal / cooling_candidate < min_cool {
                     println!("Cooling capped at t={} x={} y={} r={}", t_orbits, x, y, rsq.sqrt());
                     -uthermal/min_cool

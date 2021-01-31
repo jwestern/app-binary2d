@@ -91,7 +91,7 @@ fn main() -> anyhow::Result<()>
         .item("lambda"          , 0.0    , "Bulk viscosity [Omega a^2] (Farris14:lambda=-nu/3; div3d.v=0:lambda=2nu/3")
         .item("cool_type"       , "T^4"  , "Type of cooling [beta|T^4]")
         .item("beta"            , 0.05   , "Beta cooling strength [dimensionless, ~0.05]")
-        .item("cooling_rate"    , 0.001  , "T^4 cooling strength [1/orbits, ~0.001]")
+        .item("cooling_rate"    , 0.7    , "Cubed root of T^4 cooling strength [1/orbits, ~0.7]")
         .item("onset_shift"     , -500.0 , "Time at which cooling term reaches 50% strength [orbits]")
         .item("onset_duration"  , 10.0   , "Approximate time duration over which cooling term goes from 0%-100% strength [orbits]")
         .item("min_cooling_time", 0.005  , "Floor for the cooling time [orbits], applied when cool_type='T^4'")
