@@ -523,7 +523,6 @@ impl Hydrodynamics for Euler
                 let kboltz_code   = kboltz_cgs * gram * centimeter.powi(2) / second.powi(2); //Boltzmann constant in code units
                 let temperature   = mproton_code / kboltz_code * primitive.gas_pressure() / primitive.mass_density(); //Temperature in Kelvin
                 let cooling_candidate = sigma_sb_code * temperature.powi(4) * slow_on;
-
                 if uthermal / cooling_candidate < min_cool {
                     //println!("Cooling capped at t={} x={} y={} r={}", t_orbits, x, y, rsq.sqrt());
                     -uthermal/min_cool
