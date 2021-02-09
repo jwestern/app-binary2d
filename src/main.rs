@@ -85,16 +85,17 @@ fn main() -> anyhow::Result<()>
         .item("disk_radius"     , 3.0    , "Disk truncation radius (meaning depends on disk_type)")
         .item("pr81_time"       , 0.01   , "Dimensionless time to initialize Pringle81 disk type")
         .item("disk_width"      , 1.5    , "Disk width (model-dependent)")
+        .item("bbh_mass_msol"   , 1e3    , "Binary mass in solar masses")
+        .item("bbh_semi_pc"     , 1e-4   , "Binary semi-major axis in parsecs")
         .item("domain_radius"   , 6.0    , "Half-size of the domain [a]")
         .item("eccentricity"    , 0.0    , "Orbital eccentricity")
         .item("hydro"           , "iso"  , "Hydrodynamics mode: [iso|euler]")
         .item("lambda"          , 0.0    , "Bulk viscosity [Omega a^2] (Farris14:lambda=-nu/3; div3d.v=0:lambda=2nu/3")
         .item("cool_type"       , "T^4"  , "Type of cooling [beta|T^4]")
         .item("beta"            , 0.05   , "Beta cooling strength [dimensionless, ~0.05]")
-        .item("cooling_rate"    , 0.001  , "T^4 cooling strength [1/orbits, ~0.001]")
         .item("onset_shift"     , -500.0 , "Time at which cooling term reaches 50% strength [orbits]")
         .item("onset_duration"  , 10.0   , "Approximate time duration over which cooling term goes from 0%-100% strength [orbits]")
-        .item("min_cooling_time", 0.005  , "Floor for the cooling time [orbits], applied when cool_type='T^4'")
+        .item("min_cooling_time", 3.0    , "Floor for the cooling time [multiples of dt], applied when cool_type='T^4'")
         .item("mach_number"     , 10.0   , "Orbital Mach number of the disk")
         .item("mass_ratio"      , 1.0    , "Binary mass ratio (M2 / M1)")
         .item("nu"              , 0.001  , "Shear viscosity [Omega a^2]")
@@ -578,7 +579,8 @@ impl Solver {
             onset_duration:   model.get("onset_duration").into(),
             beta:             model.get("beta").into(),
             disk_mass:        model.get("disk_mass").into(),
-            cooling_rate:     model.get("cooling_rate").into(),
+            bbh_mass_msol:    model.get("bbh_mass_msol").into(),
+            bbh_semi_pc:      model.get("bbh_semi_pc").into(),
             min_cooling_time: model.get("min_cooling_time").into(),
             force_flux_comm:  app.flux_comm,
             orbital_elements: kepler_two_body::OrbitalElements(a, m, q, e),

@@ -74,9 +74,10 @@ pub struct Solver
     pub nu: f64,
     pub lambda: f64,
     pub disk_mass: f64,
+    pub bbh_mass_msol: f64,
+    pub bbh_semi_pc: f64,
     pub cool_type: String,
     pub beta: f64,
-    pub cooling_rate: f64,
     pub onset_duration: f64,
     pub onset_shift: f64,
     pub min_cooling_time: f64,
@@ -495,7 +496,7 @@ impl Hydrodynamics for Euler
         let beta      = solver.beta;
         let onset_dur = solver.onset_duration;
         let onset_shi = solver.onset_shift;
-        let min_cool  = solver.min_cooling_time * ORBITAL_PERIOD;
+        let min_cool  = solver.min_cooling_time * dt;
         let t_orbits  = t / ORBITAL_PERIOD;
         let slow_on   = (erf( (t_orbits - onset_shi) / onset_dur ) + 1.0) * 0.5;
         let uthermal  = primitive.gas_pressure() / (self.gamma_law_index - 1.0);
@@ -506,10 +507,25 @@ impl Hydrodynamics for Euler
 
             } else if solver.cool_type=="T^4" {
 
-                let epsilon = primitive.gas_pressure() / primitive.mass_density() / (self.gamma_law_index - 1.0);
-                let cooling_candidate = solver.disk_mass * epsilon.powi(4) * solver.cooling_rate / ORBITAL_PERIOD * slow_on;
+                let msol_cgs      = 1.989e33;                                                //solar mass in grams
+                let pc_cgs        = 3.086e18;                                                //parsec in centimeters
+                let gnewton_cgs   = 6.6725985e-8;                                            //G Newton in cgs
+                let bbh_mass_cgs  = solver.bbh_mass_msol * msol_cgs;                         //binary total mass in cgs
+                let a_cgs         = solver.bbh_semi_pc * pc_cgs;                             //binary semi-major axis in cgs
+                let gram          = 1.0 / bbh_mass_cgs;                                      //1 gram in code units
+                let centimeter    = 1.0 / a_cgs;                                             //1 centimeter in code units
+                let second        = (gnewton_cgs * bbh_mass_cgs / a_cgs.powf(3.0)).sqrt();   //1 second in code units
+                let sigma_sb_cgs  = 5.6705119e-5;                                            //Stefan-Boltzmann constant in cgs
+                let sigma_sb_code = sigma_sb_cgs * gram / second.powf(3.0);                  // Stefan-Boltzmann constant in code units / Kelvin^{-4}
+                let mproton_cgs   = 1.672623110e-24;                                         //Proton mass in cgs
+                let kboltz_cgs    = 1.38065812e-16;                                          //Boltzmann constant in cgs
+                let mproton_code  = mproton_cgs * gram;                                      //Proton mass in code units
+                let kboltz_code   = kboltz_cgs * gram * centimeter.powi(2) / second.powi(2); //Boltzmann constant in code units
+                let temperature   = mproton_code / kboltz_code * primitive.gas_pressure() / primitive.mass_density(); //Temperature in Kelvin
+                let cooling_candidate = sigma_sb_code * temperature.powi(4) * slow_on;
+
                 if uthermal / cooling_candidate < min_cool {
-                    println!("Cooling capped at t={} x={} y={} r={}", t_orbits, x, y, rsq.sqrt());
+                    //println!("Cooling capped at t={} x={} y={} r={}", t_orbits, x, y, rsq.sqrt());
                     -uthermal/min_cool
                 } else {
                     -cooling_candidate
