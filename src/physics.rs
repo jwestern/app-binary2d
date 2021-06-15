@@ -374,23 +374,12 @@ impl Physics {
         }
     }
 
-    //pub fn sink_kernel(&self, dx: f64, dy: f64) -> f64 {
-    //    let r2 = dx * dx + dy * dy;
-    //    let s2 = self.sink_radius * self.sink_radius;
-
-    //    if r2 < s2 * 9.0 {
-    //        self.sink_rate * f64::exp(-(r2 / s2).powi(3))
-    //    } else {
-    //        0.0
-    //    }
-    //}
-
     pub fn sink_kernel(&self, dx: f64, dy: f64) -> f64 {
         let r2 = dx * dx + dy * dy;
         let s2 = self.sink_radius * self.sink_radius;
 
-        if r2 < s2 {
-            self.sink_rate * (1.0 - r2/s2).powi(2)
+        if r2 < s2 * 9.0 {
+            self.sink_rate * f64::exp(-(r2 / s2).powi(3))
         } else {
             0.0
         }
