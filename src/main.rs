@@ -51,6 +51,9 @@ where
                 mzps,
                 mzps * physics.rk_substeps() as f64 / num_cpus::get().min(control.num_threads()) as f64)
         }
+        if let Some(interval) = control.iteration_message_interval {
+            tasks.iteration_message.advance(interval * ORBITAL_PERIOD);
+        }
     }
     if tasks.record_time_series.next_time <= state.time {
         if let Some(interval) = control.time_series_interval {

@@ -104,6 +104,10 @@ pub struct Control {
     /// omitted or nil, no time series samples are taken.
     pub time_series_interval: Option<f64>,
 
+    /// How frequency to print an iteration message to stdout (in orbits).
+    /// If omitted, message frequency is dictated by fold.
+    pub iteration_message_interval: Option<f64>,
+
     /// Number of iterations between performing side effects. Larger values
     /// yield less terminal output and more accurate performance estimates.
     pub fold: usize,
